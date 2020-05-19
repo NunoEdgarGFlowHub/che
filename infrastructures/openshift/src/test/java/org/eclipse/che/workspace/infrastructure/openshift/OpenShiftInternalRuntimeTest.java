@@ -141,6 +141,7 @@ public class OpenShiftInternalRuntimeTest {
   @Mock private UnrecoverablePodEventListenerFactory unrecoverablePodEventListenerFactory;
   @Mock private RuntimeHangingDetector runtimeHangingDetector;
   @Mock private OpenShiftPreviewUrlCommandProvisioner previewUrlCommandProvisioner;
+  @Mock private AsyncStorageProvisioner asyncStorageProvisioner;
 
   @Mock(answer = Answers.RETURNS_MOCKS)
   private Tracer tracer;
@@ -178,6 +179,7 @@ public class OpenShiftInternalRuntimeTest {
             toolingProvisioner,
             runtimeHangingDetector,
             previewUrlCommandProvisioner,
+            asyncStorageProvisioner,
             tracer,
             context,
             project);

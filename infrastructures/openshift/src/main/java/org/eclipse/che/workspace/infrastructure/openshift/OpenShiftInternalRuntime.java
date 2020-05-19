@@ -11,6 +11,9 @@
  */
 package org.eclipse.che.workspace.infrastructure.openshift;
 
+import static org.eclipse.che.api.workspace.shared.Constants.ASYNC_PERSIST_ATTRIBUTE;
+import static org.eclipse.che.workspace.infrastructure.kubernetes.namespace.pvc.EphemeralWorkspaceUtility.isEphemeral;
+
 import com.google.inject.assistedinject.Assisted;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -53,6 +56,7 @@ import org.eclipse.che.workspace.infrastructure.openshift.server.OpenShiftServer
 public class OpenShiftInternalRuntime extends KubernetesInternalRuntime<OpenShiftEnvironment> {
 
   private final OpenShiftProject project;
+  private final AsyncStorageProvisioner asyncStorageProvisioner;
 
   @Inject
   public OpenShiftInternalRuntime(
@@ -74,6 +78,7 @@ public class OpenShiftInternalRuntime extends KubernetesInternalRuntime<OpenShif
       SidecarToolingProvisioner<OpenShiftEnvironment> toolingProvisioner,
       RuntimeHangingDetector runtimeHangingDetector,
       OpenShiftPreviewUrlCommandProvisioner previewUrlCommandProvisioner,
+      AsyncStorageProvisioner asyncStorageProvisioner,
       Tracer tracer,
       @Assisted OpenShiftRuntimeContext context,
       @Assisted OpenShiftProject project) {
@@ -100,6 +105,7 @@ public class OpenShiftInternalRuntime extends KubernetesInternalRuntime<OpenShif
         tracer,
         context,
         project);
+    this.asyncStorageProvisioner = asyncStorageProvisioner;
     this.project = project;
   }
 
@@ -108,7 +114,10 @@ public class OpenShiftInternalRuntime extends KubernetesInternalRuntime<OpenShif
   protected void startMachines() throws InfrastructureException {
     OpenShiftEnvironment osEnv = getContext().getEnvironment();
     String workspaceId = getContext().getIdentity().getWorkspaceId();
-
+    if (isEphemeral(osEnv.getAttributes())
+        && "true".equals(osEnv.getAttributes().get(ASYNC_PERSIST_ATTRIBUTE))) {
+      asyncStorageProvisioner.provision(getContext().getIdentity());
+    }
     createSecrets(osEnv, workspaceId);
     createConfigMaps(osEnv, workspaceId);
     List<Service> createdServices = createServices(osEnv, workspaceId);
